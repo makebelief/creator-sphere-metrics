@@ -7,14 +7,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ArrowLeft } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signIn } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
       toast({
@@ -25,14 +28,23 @@ const Login = () => {
       return;
     }
     
-    toast({
-      title: "Welcome back!",
-      description: "Redirecting to your dashboard...",
-    });
+    setLoading(true);
+    const { error } = await signIn(email, password);
     
-    setTimeout(() => {
+    if (error) {
+      toast({
+        title: "Login Failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "Welcome back!",
+        description: "Redirecting to your dashboard...",
+      });
       navigate("/dashboard");
-    }, 1500);
+    }
+    setLoading(false);
   };
 
   return (
@@ -67,6 +79,7 @@ const Login = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
                   required
+                  disabled={loading}
                 />
               </div>
               <div>
@@ -78,10 +91,15 @@ const Login = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Your password"
                   required
+                  disabled={loading}
                 />
               </div>
-              <Button type="submit" className="w-full bg-gradient-to-r from-purple-600 to-blue-600">
-                Sign In
+              <Button 
+                type="submit" 
+                className="w-full bg-gradient-to-r from-purple-600 to-blue-600"
+                disabled={loading}
+              >
+                {loading ? "Signing In..." : "Sign In"}
               </Button>
             </form>
             

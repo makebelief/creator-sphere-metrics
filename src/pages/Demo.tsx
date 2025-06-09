@@ -1,4 +1,5 @@
 
+import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,9 +15,79 @@ import {
   Users,
   TrendingUp
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const Demo = () => {
+  const { userId } = useParams();
+  const [profile, setProfile] = useState<any>(null);
+  const [socialAccounts, setSocialAccounts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (userId) {
+      fetchUserPortfolio();
+    } else {
+      // Show demo data if no user ID
+      setLoading(false);
+    }
+  }, [userId]);
+
+  const fetchUserPortfolio = async () => {
+    try {
+      // Fetch profile
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      // Fetch social accounts
+      const { data: accountsData } = await supabase
+        .from('social_accounts')
+        .select('*')
+        .eq('user_id', userId);
+
+      setProfile(profileData);
+      setSocialAccounts(accountsData || []);
+    } catch (error) {
+      console.error('Error fetching portfolio:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-cyan-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading portfolio...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Use real data if available, otherwise show demo
+  const displayName = profile?.full_name || "Creative User";
+  const displayBio = profile?.bio || "Passionate about lifestyle, technology, and creative content. Helping brands connect with audiences through authentic storytelling and engaging visual content across multiple platforms.";
+  const displayLocation = profile?.location || "Los Angeles, CA";
+  const totalFollowers = socialAccounts.reduce((sum, account) => sum + account.followers_count, 0) || 125000;
+
+  const platformIcons = {
+    instagram: Instagram,
+    youtube: Youtube,
+    twitter: Twitter,
+    linkedin: Linkedin,
+  };
+
+  const platformColors = {
+    instagram: "text-pink-600 border-pink-200 hover:border-pink-300 hover:bg-pink-50",
+    youtube: "text-red-600 border-red-200 hover:border-red-300 hover:bg-red-50",
+    twitter: "text-blue-500 border-blue-200 hover:border-blue-300 hover:bg-blue-50",
+    linkedin: "text-blue-700 border-blue-200 hover:border-blue-300 hover:bg-blue-50",
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-cyan-50">
       <div className="container mx-auto px-4 py-8 max-w-2xl">
@@ -26,7 +97,7 @@ const Demo = () => {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Home
           </Link>
-          <Badge className="mb-4 bg-green-100 text-green-800">Live Demo Portfolio</Badge>
+          {!userId && <Badge className="mb-4 bg-green-100 text-green-800">Live Demo Portfolio</Badge>}
         </div>
 
         {/* Portfolio Card */}
@@ -35,15 +106,15 @@ const Demo = () => {
           <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-8 text-center">
             <div className="w-24 h-24 bg-white rounded-full mx-auto mb-4 flex items-center justify-center">
               <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-xl">
-                CU
+                {displayName.split(' ').map(n => n[0]).join('').toUpperCase()}
               </div>
             </div>
-            <h1 className="text-3xl font-bold mb-2">Creative User</h1>
+            <h1 className="text-3xl font-bold mb-2">{displayName}</h1>
             <p className="text-purple-100 mb-4">Digital Creator & Influencer</p>
             <div className="flex items-center justify-center space-x-4 text-sm text-purple-100">
               <div className="flex items-center">
                 <MapPin className="h-4 w-4 mr-1" />
-                Los Angeles, CA
+                {displayLocation}
               </div>
               <div className="flex items-center">
                 <Calendar className="h-4 w-4 mr-1" />
@@ -56,9 +127,7 @@ const Demo = () => {
             {/* Bio Section */}
             <div className="text-center mb-8">
               <p className="text-gray-600 leading-relaxed">
-                Passionate about lifestyle, technology, and creative content. 
-                Helping brands connect with audiences through authentic storytelling 
-                and engaging visual content across multiple platforms.
+                {displayBio}
               </p>
             </div>
 
@@ -68,7 +137,7 @@ const Demo = () => {
                 <div className="flex items-center justify-center mb-2">
                   <Users className="h-5 w-5 text-purple-600 mr-1" />
                 </div>
-                <p className="text-2xl font-bold text-gray-800">125K+</p>
+                <p className="text-2xl font-bold text-gray-800">{totalFollowers.toLocaleString()}+</p>
                 <p className="text-sm text-gray-600">Total Followers</p>
               </div>
               <div className="bg-gray-50 rounded-lg p-4">
@@ -82,8 +151,8 @@ const Demo = () => {
                 <div className="flex items-center justify-center mb-2">
                   <ExternalLink className="h-5 w-5 text-cyan-600 mr-1" />
                 </div>
-                <p className="text-2xl font-bold text-gray-800">890K</p>
-                <p className="text-sm text-gray-600">Monthly Reach</p>
+                <p className="text-2xl font-bold text-gray-800">{socialAccounts.length || 4}</p>
+                <p className="text-sm text-gray-600">Platforms</p>
               </div>
             </div>
 
@@ -91,73 +160,58 @@ const Demo = () => {
             <div className="space-y-4 mb-8">
               <h3 className="text-lg font-semibold text-center mb-6">Connect With Me</h3>
               
-              <Button 
-                variant="outline" 
-                className="w-full justify-between h-16 hover:bg-pink-50 border-pink-200 hover:border-pink-300"
-                asChild
-              >
-                <a href="#" target="_blank" rel="noopener noreferrer">
-                  <div className="flex items-center">
-                    <Instagram className="h-6 w-6 text-pink-600 mr-3" />
-                    <div className="text-left">
-                      <p className="font-medium">Instagram</p>
-                      <p className="text-sm text-gray-600">45.2K followers</p>
-                    </div>
-                  </div>
-                  <ExternalLink className="h-4 w-4 text-gray-400" />
-                </a>
-              </Button>
-
-              <Button 
-                variant="outline" 
-                className="w-full justify-between h-16 hover:bg-red-50 border-red-200 hover:border-red-300"
-                asChild
-              >
-                <a href="#" target="_blank" rel="noopener noreferrer">
-                  <div className="flex items-center">
-                    <Youtube className="h-6 w-6 text-red-600 mr-3" />
-                    <div className="text-left">
-                      <p className="font-medium">YouTube</p>
-                      <p className="text-sm text-gray-600">38.9K subscribers</p>
-                    </div>
-                  </div>
-                  <ExternalLink className="h-4 w-4 text-gray-400" />
-                </a>
-              </Button>
-
-              <Button 
-                variant="outline" 
-                className="w-full justify-between h-16 hover:bg-blue-50 border-blue-200 hover:border-blue-300"
-                asChild
-              >
-                <a href="#" target="_blank" rel="noopener noreferrer">
-                  <div className="flex items-center">
-                    <Twitter className="h-6 w-6 text-blue-500 mr-3" />
-                    <div className="text-left">
-                      <p className="font-medium">Twitter</p>
-                      <p className="text-sm text-gray-600">28.1K followers</p>
-                    </div>
-                  </div>
-                  <ExternalLink className="h-4 w-4 text-gray-400" />
-                </a>
-              </Button>
-
-              <Button 
-                variant="outline" 
-                className="w-full justify-between h-16 hover:bg-blue-50 border-blue-200 hover:border-blue-300"
-                asChild
-              >
-                <a href="#" target="_blank" rel="noopener noreferrer">
-                  <div className="flex items-center">
-                    <Linkedin className="h-6 w-6 text-blue-700 mr-3" />
-                    <div className="text-left">
-                      <p className="font-medium">LinkedIn</p>
-                      <p className="text-sm text-gray-600">13.2K connections</p>
-                    </div>
-                  </div>
-                  <ExternalLink className="h-4 w-4 text-gray-400" />
-                </a>
-              </Button>
+              {socialAccounts.length > 0 ? (
+                socialAccounts.map((account) => {
+                  const Icon = platformIcons[account.platform as keyof typeof platformIcons] || ExternalLink;
+                  const colorClass = platformColors[account.platform as keyof typeof platformColors] || "text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50";
+                  
+                  return (
+                    <Button 
+                      key={account.id}
+                      variant="outline" 
+                      className={`w-full justify-between h-16 ${colorClass}`}
+                      asChild
+                    >
+                      <a href={account.url} target="_blank" rel="noopener noreferrer">
+                        <div className="flex items-center">
+                          <Icon className="h-6 w-6 mr-3" />
+                          <div className="text-left">
+                            <p className="font-medium capitalize">{account.platform}</p>
+                            <p className="text-sm text-gray-600">{account.followers_count.toLocaleString()} followers</p>
+                          </div>
+                        </div>
+                        <ExternalLink className="h-4 w-4 text-gray-400" />
+                      </a>
+                    </Button>
+                  );
+                })
+              ) : (
+                // Demo data fallback
+                [
+                  { platform: "Instagram", handle: "@creativeuser", followers: 45200, url: "#", icon: Instagram, color: "text-pink-600 border-pink-200 hover:border-pink-300 hover:bg-pink-50" },
+                  { platform: "YouTube", handle: "Creative Channel", followers: 38900, url: "#", icon: Youtube, color: "text-red-600 border-red-200 hover:border-red-300 hover:bg-red-50" },
+                  { platform: "Twitter", handle: "@creativeuser", followers: 28100, url: "#", icon: Twitter, color: "text-blue-500 border-blue-200 hover:border-blue-300 hover:bg-blue-50" },
+                  { platform: "LinkedIn", handle: "Creative User", followers: 13200, url: "#", icon: Linkedin, color: "text-blue-700 border-blue-200 hover:border-blue-300 hover:bg-blue-50" }
+                ].map((account) => (
+                  <Button 
+                    key={account.platform}
+                    variant="outline" 
+                    className={`w-full justify-between h-16 ${account.color}`}
+                    asChild
+                  >
+                    <a href={account.url} target="_blank" rel="noopener noreferrer">
+                      <div className="flex items-center">
+                        <account.icon className="h-6 w-6 mr-3" />
+                        <div className="text-left">
+                          <p className="font-medium">{account.platform}</p>
+                          <p className="text-sm text-gray-600">{account.followers.toLocaleString()} followers</p>
+                        </div>
+                      </div>
+                      <ExternalLink className="h-4 w-4 text-gray-400" />
+                    </a>
+                  </Button>
+                ))
+              )}
             </div>
 
             {/* Collaboration CTA */}

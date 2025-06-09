@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,9 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ArrowLeft, Instagram, Youtube, Twitter, Linkedin } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { useSocialAccounts } from "@/hooks/useSocialAccounts";
 
 const Signup = () => {
   const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -18,12 +20,13 @@ const Signup = () => {
     youtube: "",
     twitter: "",
     linkedin: "",
-    tiktok: ""
   });
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signUp } = useAuth();
+  const { addAccount } = useSocialAccounts();
 
-  const handleBasicInfo = (e: React.FormEvent) => {
+  const handleBasicInfo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.password) {
       toast({
@@ -33,16 +36,57 @@ const Signup = () => {
       });
       return;
     }
-    setStep(2);
+
+    setLoading(true);
+    const { error } = await signUp(formData.email, formData.password, formData.name);
+    
+    if (error) {
+      toast({
+        title: "Signup Failed",
+        description: error.message,
+        variant: "destructive"
+      });
+      setLoading(false);
+    } else {
+      toast({
+        title: "Account Created!",
+        description: "Please check your email to verify your account.",
+      });
+      setStep(2);
+      setLoading(false);
+    }
   };
 
-  const handleSocialLinks = (e: React.FormEvent) => {
+  const handleSocialLinks = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate account creation
+    setLoading(true);
+
+    // Add social accounts if provided
+    const socialPlatforms = [
+      { platform: 'instagram', url: formData.instagram, icon: Instagram },
+      { platform: 'youtube', url: formData.youtube, icon: Youtube },
+      { platform: 'twitter', url: formData.twitter, icon: Twitter },
+      { platform: 'linkedin', url: formData.linkedin, icon: Linkedin },
+    ];
+
+    for (const social of socialPlatforms) {
+      if (social.url) {
+        const username = social.url.split('/').pop() || '';
+        await addAccount({
+          platform: social.platform,
+          username,
+          url: social.url,
+          followers_count: 0,
+          engagement_rate: 0,
+        });
+      }
+    }
+
     toast({
-      title: "Account Created!",
+      title: "Profile Complete!",
       description: "Welcome to CreatorLink. Redirecting to your dashboard...",
     });
+    
     setTimeout(() => {
       navigate("/dashboard");
     }, 2000);
@@ -108,8 +152,12 @@ const Signup = () => {
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full bg-gradient-to-r from-purple-600 to-blue-600">
-                  Continue
+                <Button 
+                  type="submit" 
+                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600"
+                  disabled={loading}
+                >
+                  {loading ? "Creating Account..." : "Continue"}
                 </Button>
               </form>
               
@@ -185,14 +233,19 @@ const Signup = () => {
                 </div>
                 
                 <div className="pt-4">
-                  <Button type="submit" className="w-full bg-gradient-to-r from-purple-600 to-blue-600">
-                    Create Portfolio
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-gradient-to-r from-purple-600 to-blue-600"
+                    disabled={loading}
+                  >
+                    {loading ? "Setting Up Portfolio..." : "Create Portfolio"}
                   </Button>
                   <Button 
                     type="button" 
                     variant="ghost" 
                     className="w-full mt-2" 
                     onClick={() => setStep(1)}
+                    disabled={loading}
                   >
                     Back
                   </Button>
