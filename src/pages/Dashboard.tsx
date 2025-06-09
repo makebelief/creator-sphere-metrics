@@ -65,19 +65,30 @@ const Dashboard = () => {
   }
 
   // Calculate stats from real data
-  const totalFollowers = accounts.reduce((sum, account) => sum + account.followers_count, 0);
+  const totalFollowers = accounts.reduce((sum, account) => sum + (account.followers_count || 0), 0);
   const avgEngagement = accounts.length > 0 
-    ? accounts.reduce((sum, account) => sum + account.engagement_rate, 0) / accounts.length 
+    ? accounts.reduce((sum, account) => sum + (account.engagement_rate || 0), 0) / accounts.length 
     : 0;
 
-  const socialAccountsWithIcons = accounts.map(account => ({
-    ...account,
+  // Map social accounts to the format expected by components
+  const socialPlatformsData = accounts.map(account => ({
+    platform: account.platform,
+    handle: `@${account.username}`,
+    followers: account.followers_count || 0,
+    engagement: account.engagement_rate || 0,
     icon: account.platform === 'instagram' ? Instagram :
           account.platform === 'youtube' ? Youtube :
           account.platform === 'twitter' ? Twitter : Linkedin,
     color: account.platform === 'instagram' ? "text-pink-600" :
            account.platform === 'youtube' ? "text-red-600" :
            account.platform === 'twitter' ? "text-blue-500" : "text-blue-700"
+  }));
+
+  // Map for RateCard component
+  const rateCardPlatforms = accounts.map(account => ({
+    platform: account.platform,
+    followers: account.followers_count || 0,
+    engagement: account.engagement_rate || 0
   }));
 
   return (
@@ -204,18 +215,18 @@ const Dashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {socialAccountsWithIcons.map((account) => (
-                      <div key={account.id} className="flex items-center justify-between p-4 rounded-lg bg-gray-50">
+                    {socialPlatformsData.map((account, index) => (
+                      <div key={index} className="flex items-center justify-between p-4 rounded-lg bg-gray-50">
                         <div className="flex items-center space-x-4">
                           <account.icon className={`h-8 w-8 ${account.color}`} />
                           <div>
                             <h3 className="font-medium capitalize">{account.platform}</h3>
-                            <p className="text-sm text-gray-600">@{account.username}</p>
+                            <p className="text-sm text-gray-600">{account.handle}</p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold">{account.followers_count.toLocaleString()} followers</p>
-                          <p className="text-sm text-gray-600">{account.engagement_rate}% engagement</p>
+                          <p className="font-semibold">{account.followers.toLocaleString()} followers</p>
+                          <p className="text-sm text-gray-600">{account.engagement}% engagement</p>
                         </div>
                       </div>
                     ))}
@@ -236,14 +247,14 @@ const Dashboard = () => {
           </TabsContent>
 
           <TabsContent value="platforms">
-            <SocialPlatforms platforms={socialAccountsWithIcons} />
+            <SocialPlatforms platforms={socialPlatformsData} />
           </TabsContent>
 
           <TabsContent value="rate-card">
             <RateCard 
               followers={totalFollowers}
               engagementRate={avgEngagement}
-              platforms={socialAccountsWithIcons}
+              platforms={rateCardPlatforms}
             />
           </TabsContent>
         </Tabs>
