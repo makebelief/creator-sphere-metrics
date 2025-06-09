@@ -66,13 +66,13 @@ const Demo = () => {
         </div>
       </div>
     );
-  }
+  };
 
   // Use real data if available, otherwise show demo
   const displayName = profile?.full_name || "Creative User";
   const displayBio = profile?.bio || "Passionate about lifestyle, technology, and creative content. Helping brands connect with audiences through authentic storytelling and engaging visual content across multiple platforms.";
   const displayLocation = profile?.location || "Los Angeles, CA";
-  const totalFollowers = socialAccounts.reduce((sum, account) => sum + account.followers_count, 0) || 125000;
+  const totalFollowers = socialAccounts.reduce((sum, account) => sum + (account.followers_count || 0), 0) || 125000;
 
   const platformIcons = {
     instagram: Instagram,
@@ -87,6 +87,14 @@ const Demo = () => {
     twitter: "text-blue-500 border-blue-200 hover:border-blue-300 hover:bg-blue-50",
     linkedin: "text-blue-700 border-blue-200 hover:border-blue-300 hover:bg-blue-50",
   };
+
+  // Demo data fallback with placeholder URLs
+  const demoSocialAccounts = [
+    { platform: "instagram", handle: "@creativeuser", followers: 45200, url: "https://instagram.com/creativeuser" },
+    { platform: "youtube", handle: "Creative Channel", followers: 38900, url: "https://youtube.com/@creativechannel" },
+    { platform: "twitter", handle: "@creativeuser", followers: 28100, url: "https://twitter.com/creativeuser" },
+    { platform: "linkedin", handle: "Creative User", followers: 13200, url: "https://linkedin.com/in/creativeuser" }
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-cyan-50">
@@ -177,7 +185,7 @@ const Demo = () => {
                           <Icon className="h-6 w-6 mr-3" />
                           <div className="text-left">
                             <p className="font-medium capitalize">{account.platform}</p>
-                            <p className="text-sm text-gray-600">{account.followers_count.toLocaleString()} followers</p>
+                            <p className="text-sm text-gray-600">{(account.followers_count || 0).toLocaleString()} followers</p>
                           </div>
                         </div>
                         <ExternalLink className="h-4 w-4 text-gray-400" />
@@ -187,30 +195,30 @@ const Demo = () => {
                 })
               ) : (
                 // Demo data fallback
-                [
-                  { platform: "Instagram", handle: "@creativeuser", followers: 45200, url: "#", icon: Instagram, color: "text-pink-600 border-pink-200 hover:border-pink-300 hover:bg-pink-50" },
-                  { platform: "YouTube", handle: "Creative Channel", followers: 38900, url: "#", icon: Youtube, color: "text-red-600 border-red-200 hover:border-red-300 hover:bg-red-50" },
-                  { platform: "Twitter", handle: "@creativeuser", followers: 28100, url: "#", icon: Twitter, color: "text-blue-500 border-blue-200 hover:border-blue-300 hover:bg-blue-50" },
-                  { platform: "LinkedIn", handle: "Creative User", followers: 13200, url: "#", icon: Linkedin, color: "text-blue-700 border-blue-200 hover:border-blue-300 hover:bg-blue-50" }
-                ].map((account) => (
-                  <Button 
-                    key={account.platform}
-                    variant="outline" 
-                    className={`w-full justify-between h-16 ${account.color}`}
-                    asChild
-                  >
-                    <a href={account.url} target="_blank" rel="noopener noreferrer">
-                      <div className="flex items-center">
-                        <account.icon className="h-6 w-6 mr-3" />
-                        <div className="text-left">
-                          <p className="font-medium">{account.platform}</p>
-                          <p className="text-sm text-gray-600">{account.followers.toLocaleString()} followers</p>
+                demoSocialAccounts.map((account) => {
+                  const Icon = platformIcons[account.platform as keyof typeof platformIcons] || ExternalLink;
+                  const colorClass = platformColors[account.platform as keyof typeof platformColors] || "text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50";
+                  
+                  return (
+                    <Button 
+                      key={account.platform}
+                      variant="outline" 
+                      className={`w-full justify-between h-16 ${colorClass}`}
+                      asChild
+                    >
+                      <a href={account.url} target="_blank" rel="noopener noreferrer">
+                        <div className="flex items-center">
+                          <Icon className="h-6 w-6 mr-3" />
+                          <div className="text-left">
+                            <p className="font-medium capitalize">{account.platform}</p>
+                            <p className="text-sm text-gray-600">{account.followers.toLocaleString()} followers</p>
+                          </div>
                         </div>
-                      </div>
-                      <ExternalLink className="h-4 w-4 text-gray-400" />
-                    </a>
-                  </Button>
-                ))
+                        <ExternalLink className="h-4 w-4 text-gray-400" />
+                      </a>
+                    </Button>
+                  );
+                })
               )}
             </div>
 
